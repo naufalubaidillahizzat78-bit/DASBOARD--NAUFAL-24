@@ -1,0 +1,16 @@
+venv/
+__pycache__/
+*.pyc
+*.pyo
+
+.streamlit/secrets.toml
+
+.next/
+node_modules/
+
+.idea/
+.vscode/
+
+.DS_Store
+
+output/*.tmp
