@@ -9,4 +9,3 @@ scipy
 prince
 kmodes
 fcmeans
-xlsxwriter
