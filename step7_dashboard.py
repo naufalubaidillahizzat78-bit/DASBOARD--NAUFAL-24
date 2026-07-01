@@ -17,10 +17,11 @@ warnings.filterwarnings('ignore')
 
 def get_cluster_characteristic(lbl):
     chars = {
-        'Sangat Tinggi': "IPK kumulatif sangat tinggi (IPK > 3.5), kehadiran sangat disiplin (100%), performa unggul konsisten di hampir seluruh mata kuliah.",
-        'Tinggi': "IPK kumulatif tinggi (IPK 3.3 - 3.5), kehadiran sangat baik, dan performa akademis stabil di atas rata-rata.",
+        'Sangat Tinggi': "IPK kumulatif sangat tinggi (IPK > 3.7), kehadiran sangat disiplin (100%), performa unggul konsisten di seluruh semester.",
+        'Tinggi': "IPK kumulatif tinggi (IPK 3.4 - 3.7), kehadiran sangat baik, performa akademis stabil di atas rata-rata.",
+        'Menengah': "IPK rata-rata (IPK 3.0 - 3.4), kehadiran stabil, memiliki potensi akademik yang baik dengan beberapa mata kuliah unggul.",
+        'Rendah/Outlier': "IPK berada di rentang rendah atau terdeteksi outlier (IPK < 2.8 atau data tidak biasa), memerlukan perhatian khusus dan pembimbingan akademik intensif.",
         'Sedang': "IPK rata-rata (IPK 3.0 - 3.3), kehadiran stabil, memiliki potensi akademik yang baik dengan beberapa mata kuliah unggul.",
-        'Cukup': "IPK berada di rentang cukup (IPK 2.8 - 3.0), kehadiran cukup baik, namun memerlukan perhatian khusus pada beberapa mata kuliah inti.",
         'Rendah': "IPK kumulatif rendah (IPK < 2.8), tingkat kehadiran perlu ditingkatkan, membutuhkan pembimbingan intensif dan program remedial terstruktur."
     }
     return chars.get(lbl, "Karakteristik akademik bervariasi sesuai metode clustering.")
@@ -47,8 +48,12 @@ def build_dashboard(df_labeled_path='output/df_labeled.pkl',
 
     # 1. Calculate Cluster Centroids in 4D PRINCALS space
     labels_unique = sorted(df['cluster_label'].unique(), key=lambda x: (
-        0 if 'Sangat Tinggi' in x else 1 if 'Tinggi' in x else
-        2 if 'Sedang' in x else 3 if 'Cukup' in x else 4))
+        0 if x == 'Sangat Tinggi' else
+        1 if x == 'Tinggi' else
+        2 if x == 'Menengah' else
+        3 if x == 'Rendah/Outlier' else
+        4 if x == 'Sedang' else
+        5 if x == 'Rendah' else 6))
 
     # Calculate centroids (mean of all 4 PRINCALS dimensions)
     centroids = {}
@@ -124,14 +129,14 @@ def build_dashboard(df_labeled_path='output/df_labeled.pkl',
             
         # Aktivitas Organisasi (deterministic seed from NRP)
         np.random.seed(nrp % 1000)
-        if lbl == 'Sangat Tinggi':
+        if lbl in ['Tinggi', 'Sangat Tinggi']:
             org_opts = [
                 "Asisten Praktikum & Anggota Divisi Keilmuan HIMA",
                 "Ketua Divisi Riset Himpunan Mahasiswa (HIMA)",
                 "Relawan Asisten Laboratorium & Pengurus UKM Penalaran",
                 "Koordinator Program Merdeka Belajar Kampus Merdeka (MBKM)"
             ]
-        elif lbl in ['Tinggi', 'Sedang']:
+        elif lbl in ['Menengah', 'Tinggi', 'Sedang']:
             org_opts = [
                 "Staff Departemen Internal Badan Eksekutif Mahasiswa (BEM)",
                 "Anggota Unit Kegiatan Mahasiswa (UKM) Musik & Seni",
@@ -178,11 +183,9 @@ def build_dashboard(df_labeled_path='output/df_labeled.pkl',
             recom = "melibatkan mahasiswa dalam proyek penelitian/riset bersama dosen, program fast-track S2, beasiswa prestasi, serta direkomendasikan menjadi asisten praktikum atau tutor sebaya."
         elif lbl == 'Tinggi':
             recom = "mendorong keaktifan dalam program magang industri bergengsi, mengikuti sertifikasi profesional bidang teknologi, dan diusulkan untuk beasiswa eksternal."
-        elif lbl == 'Sedang':
-            recom = "mengarahkan mahasiswa untuk bergabung dalam kelompok belajar sebaya (peer study group), menguatkan pemahaman praktis di lab, serta menjaga konsistensi nilai."
-        elif lbl == 'Cukup':
-            recom = "mengagendakan sesi bimbingan berkala dengan Dosen Wali untuk memantau kesulitan mata kuliah tertentu, menyarankan remedial terstruktur, dan meningkatkan partisipasi kelas."
-        else:  # Rendah
+        elif lbl == 'Menengah':
+            recom = "mendorong keaktifan dalam organisasi mahasiswa, mengikuti pelatihan kompetensi, serta memonitor perkembangan nilai secara berkala."
+        else:  # Standar / Rendah / Outlier / Kritis
             recom = "melakukan intervensi akademik segera berupa perwalian khusus, menyusun jadwal belajar intensif, pembatasan jumlah SKS semester berikutnya, serta monitoring kehadiran harian."
             
         interpretation = (
@@ -231,6 +234,12 @@ def build_dashboard(df_labeled_path='output/df_labeled.pkl',
         elif lbl == 'Tinggi':
             dominant = "Performa Akademik Di Atas Rata-rata & Kehadiran Sangat Baik"
             conclusion = "Performa sangat solid. Dorong keaktifan dalam sertifikasi profesional, program magang industri, dan kompetisi eksternal."
+        elif lbl == 'Menengah':
+            dominant = "Performa Akademik Cukup Baik & Kehadiran Stabil"
+            conclusion = "Performa stabil dan baik. Dukung dengan program bimbingan karir, pembentukan kelompok studi, dan penguatan kompetensi mata kuliah."
+        elif lbl == 'Rendah/Outlier':
+            dominant = "Performa Akademik Rendah/Outlier & Tingkat Kehadiran Perlu Ditingkatkan"
+            conclusion = "Intervensi segera diperlukan. Kerja sama dengan BK/wali, batasi beban SKS semester berikutnya, bimbingan intensif mingguan, dan tutor sebaya wajib."
         elif lbl == 'Sedang':
             dominant = "Performa Akademik Rata-rata & Tingkat Kehadiran Stabil"
             conclusion = "Performa stabil. Dukung dengan program bimbingan karir, pembentukan kelompok studi, dan penguatan mata kuliah prasyarat."
@@ -303,11 +312,13 @@ def build_dashboard(df_labeled_path='output/df_labeled.pkl',
 
     # Color Palette for JS
     PALETTE = {
-        'Sangat Tinggi': '#28C76F',
-        'Tinggi': '#00CFE8',
+        'Sangat Tinggi': '#7367F0',
+        'Tinggi': '#28C76F',
+        'Menengah': '#00CFE8',
+        'Rendah/Outlier': '#EA5455',
         'Sedang': '#7367F0',
-        'Cukup': '#FF9F43',
         'Rendah': '#EA5455',
+        'Cukup': '#FF9F43',
     }
 
     # Scree Plot Data
@@ -2097,14 +2108,14 @@ def build_dashboard(df_labeled_path='output/df_labeled.pkl',
         const color = COLORS[lbl];
         
         let tips = [];
-        if (lbl === 'Sangat Tinggi') {{
+        if (lbl === 'Tinggi' || lbl === 'Sangat Tinggi') {{
           tips = [
             "Libatkan mahasiswa dalam proyek penelitian atau riset inovasi dosen untuk mempercepat luaran publikasi ilmiah.",
             "Tawarkan jalur program fast-track S2 di fakultas jika memenuhi syarat minimal beban SKS.",
             "Diberikan penugasan sebagai asisten praktikum laboratorium atau ketua asisten tutor sebaya (peer tutor).",
             "Fasilitasi pendaftaran beasiswa prestasi internasional maupun kompetisi karya tulis ilmiah."
           ];
-        }} else if (lbl === 'Tinggi') {{
+        }} else if (lbl === 'Menengah' || lbl === 'Tinggi' || lbl === 'Sedang') {{
           tips = [
             "Dorong mahasiswa mengambil sertifikasi keahlian industri (spt. AWS, Cisco, GCP, or Microsoft) untuk memperkaya portofolio.",
             "Prioritaskan dalam penawaran program magang Merdeka Belajar Kampus Merdeka (MBKM) di mitra industri strategis.",
